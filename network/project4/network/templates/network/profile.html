@@ -1,0 +1,365 @@
+{% extends "network/layout.html" %}
+{% load custom_filters %}
+{% block body %}
+
+{% if user.is_authenticated %}
+
+{% if messages %}
+<div class="alert">
+    {% for message in messages %}
+    <p class="alert-message">{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div>
+    <div class="relative">
+        <!-- cover -->
+        <img src="{{ profile_user.cover.url }}" alt="Cover Image" class="w-full h-96 object-cover">
+        <!-- avatar -->
+        <div class="absolute top-72 left-64 ">
+            <img src="{{ profile_user.avatar.url }}" alt="Avatar" style="width: 200px; height: 200px; border-radius:50%; object-fit:cover; border: 2px solid white;">
+        </div>
+    </div>
+    <div id="sticky-header"
+        class="flex justify-between items-center w-full pt-3 text-md text-gray-600 font-bold py-2">
+       
+        {% if is_own_profile %}
+        <div class="w-full text-right mr-10">
+            <button class="bg-whitext-black py-2 px-4 text-black font-bold rounded-md">Edit Profile</button>
+        </div>
+        {% else %}
+        <div class="w-full text-right mr-10">
+            <form action="{% url 'follow_user' profile_user.id %}" method="post">
+                {% csrf_token %}
+                <button class="bg-white text-black py-2 px-4 text-black rounded-full font-bold ring:no-underline">
+                    {% if is_following %}Unfollow{% else %}Follow{% endif %}
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="flex justify">
+    <div class="ml-64">
+        <div class="mt-20">
+            <div>
+                <p class="text-2xl text-gray-500">{{ profile_user.name }}</p>
+                <p class="text-xl text-gray-500"> @{{ profile_user.username }}</p>
+            </div>
+            <!-- <div class="w-10 text-gray-500">
+                <p>{{ profile_user.bio }}</p>
+            </div> -->
+        </div>
+        
+    
+        <div class="flex justify-center">
+   
+            <!-- Navigation Links -->
+            <div class="bg-white rounded-xl p-4 shadow-md w-full max-w-lg">
+               <ul class="flex items-center space-x-6">
+                   <li class="text-black py-2">
+                       <a class="inline text-2xl hover:text-blue-600 hover:no-underline duration-150" href="{% url 'index' %}">
+                           <i class="bi bi-shuffle text-2xl mr-2"></i> Random
+                       </a>
+                   </li>
+                   <li class="text-black py-2">
+                       <a class="inline text-2xl hover:text-blue-600 hover:no-underline duration-150" href="{% url 'following' %}">
+                           <i class="bi bi-person-lines-fill text-2xl mr-2"></i> Following
+                       </a>
+                   </li>
+                   <li class="text-black py-2">
+                       <a class="inline text-2xl hover:text-blue-600 hover:no-underline duration-150" href="{% url 'profile' user.username %}">
+                           <i class="bi bi-person-circle text-2xl mr-2"></i> Profile
+                       </a>
+                   </li>
+                   <li class="text-black py-2">
+                       <a class="inline text-2xl hover:text-blue-600 hover:no-underline duration-150" href="{% url 'login' %}">
+                           <i class="bi bi-box-arrow-right text-2xl mr-2"></i> Logout
+                       </a>
+                   </li>
+               </ul>
+           </div>
+       </div>
+        
+        <div class="flex justify-center">
+            <div class="w-full max-w-5xl m-2">
+                <div class="p-2">
+                    <p class="text-lg text-white font-bold">Posts</p>
+                </div>
+                {% for post in posts %}
+                <div class="flex items-start space-x-2 p-2">
+                    <div class="my-[3px]">
+                        <img src="{{ post.user.avatar.url }}" class="rounded-full w-12 h-12 object-cover">
+                    </div>
+                    <div class="my-[3px]">
+                        <div class="flex justify-start items-center">
+                            <div class="font-bold text-black"> {{ post.user.name }} </div>
+                            <div class="text-gray-500 mx-[5px] tracking-tighter">@{{ post.user.username }}</div><span
+                                class="mx-[5px] text-gray-500">&#8226</span>
+                            <div class="text-sm text-gray-500">{{ post.created_at|time_ago_in_units }}</div>
+                        </div>
+                        <div class="py-[1px] text-lg w-[500px]">
+                            <ul>
+                                <li class="text-black">{{ post.post }}</li>
+                            </ul>
+                        </div>
+                        <div class="flex justify-around py-2 space-x-5">
+                            <!--comment btn-->
+                            <div class="px-2">
+                                <button class="comment-btn text-gray-500" data-post-id="{{ post.id }}">
+                                    <i class="bi bi-chat-right-text"></i>
+                                </button>
+                                <span id="comment-count-{{ post.id }}" class="text-gray-500">{{ post.comments.count }}</span>
+                            </div>
+                            <!--repost btn-->
+                            <div class="px-2">
+                                <button class="repost-btn text-gray-500" data-post-id="{{ post.id }}">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                                <span id="repost-count-{{ post.id }}" class="text-gray-500">{{ post.reposts.count }}</span>
+                            </div>
+                            <!--like btn-->
+                            <div class="px-2">
+                                <button class="like-btn text-gray-500" data-post-id="{{ post.id }}">
+                                    <i
+                                        class="bi {% if post|user_liked_post:request.user %}bi-heart-fill text-red-500{% else %}bi bi-suit-heart-fill{% endif %}"></i>
+                                </button>
+                                <span id="like-count-{{ post.id }}" class="text-gray-500">{{ post.likes.count }}</span>
+                            </div>
+                            {% if is_own_profile %}
+                            <div class="post-item" id="post-{{ post.id }}">
+                                <div class="relative">
+                                    <div class="post-content">{{ post.content }}</div>
+                                    <form action="{% url 'delete_post' post.id %}" method="POST"
+                                                    class="delete-form">
+                                                    {% csrf_token %}
+                                    <button type="submit" class="text-gray-500">
+                                        <i class="bi bi-trash2"></i>
+                                    </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+
+
+<script>
+
+    //comment
+    document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById("comment-modal");
+        const closeModalButton = document.querySelector(".close-comment-modal");
+        const commentForm = document.getElementById("comment-form");
+        const commentContent = document.getElementById("comment-content");
+        const commentPostIdInput = document.getElementById("comment-post-id");
+        const commentsList = document.getElementById("comments-list");
+
+        document.querySelectorAll(".comment-btn").forEach(button => {
+            button.addEventListener("click", () => {
+                const postId = button.dataset.postId;
+                commentPostIdInput.value = postId;
+                loadComments(postId);
+                modal.style.display = "block";
+            });
+        });
+
+        closeModalButton.addEventListener("click", () => {
+            modal.style.display = "none";
+            commentContent.value = "";
+        });
+
+        window.addEventListener("click", (event) => {
+            if (event.target === modal) {
+                modal.style.display = "none";
+                commentContent.value = "";
+            }
+        });
+
+        function loadComments(postId) {
+            fetch(`/post/${postId}/comments/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        commentsList.innerHTML = "";
+                        data.comments.forEach(comment => {
+                            const commentDiv = document.createElement("div");
+                            commentDiv.classList.add("flex", "space-x-2", "my-2");
+                            commentDiv.innerHTML = `<strong>@${comment.username}</strong>: <span>${comment.content}</span>`;
+                            commentsList.appendChild(commentDiv);
+                        });
+                    } else {
+                        commentsList.innerHTML = "<p>No comments yet.</p>";
+                    }
+                })
+                .catch(error => console.error("Error fetching comments:", error));
+        }
+
+        commentForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const postId = commentPostIdInput.value;
+            const content = commentContent.value;
+
+            fetch(`/post/${postId}/add_comment/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                body: JSON.stringify({ content: content })
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        const newComment = document.createElement("div");
+                        newComment.classList.add("flex", "space-x-2", "my-2");
+                        newComment.innerHTML = `<strong>@${data.username}</strong>: <span>${data.comment}</span>`;
+                        commentsList.appendChild(newComment);
+                        commentContent.value = "";
+                    } else {
+                        alert("Failed to add comment");
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error:", error);
+                    alert("An error occurred while adding the comment.");
+                });
+        });
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === name + "=") {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const likeButtons = document.querySelectorAll(".like-btn");
+
+        likeButtons.forEach(button => {
+            button.addEventListener("click", () => {
+                const postId = button.dataset.postId;
+                const likeCountElement = document.getElementById(`like-count-${postId}`);
+
+                fetch(`/post/${postId}/like/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie('csrftoken')
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            button.querySelector("i").className = data.is_liked
+                                ? "bi bi-heart-fill text-red-500"
+                                : "bi bi-heart";
+                            likeCountElement.textContent = data.like_count;
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const repostButtons = document.querySelectorAll(".repost-btn");
+
+        repostButtons.forEach(button => {
+            button.addEventListener("click", () => {
+                const postId = button.dataset.postId;
+                const repostCountElement = document.getElementById(`repost-count-${postId}`);
+                const repostContainer = document.getElementById(`repost-container-${postId}`);
+
+                fetch(`/post/${postId}/repost/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie('csrftoken')
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.action === 'added') {
+                                location.reload()
+                                button.disabled = true;  // Disable repost button to prevent further reposting
+                                repostCountElement.textContent = parseInt(repostCountElement.textContent) + 1;  // Update repost count
+
+                                // Show repost content along with the original post content
+                                repostContainer.innerHTML = `
+                            <div class="repost-content">
+                                <div class="original-post">
+                                    <p><strong>@${data.user.username}</strong> ${data.user.name}</p>
+                                    <p>${data.original_post}</p>
+                                </div>
+                                <p>Reposted: ${data.reposted_post_content}</p>
+                            </div>
+                        `;
+                            } else if (data.action === 'removed') {
+                                location.reload()
+                                button.disabled = false;  // Re-enable repost button if repost is removed
+                                repostCountElement.textContent = parseInt(repostCountElement.textContent) - 1;  // Decrease repost count
+
+                                // Hide reposted content
+                                repostContainer.innerHTML = '';
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+</script>
+
+{% endif %}
+{% endblock %}
+

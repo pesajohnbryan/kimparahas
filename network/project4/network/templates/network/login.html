@@ -1,0 +1,42 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>{% block title %}Login - Social Network{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+   
+</head>
+
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="login-container">
+        <!-- <img src="{% static 'images/logo.png' %}" alt="X Logo"> -->
+        <h2>Login</h2>
+
+        {% if message %}
+        <div class="message">
+            {{ message }}
+        </div>
+        {% endif %}
+
+        <form action="{% url 'login' %}" method="post">
+            {% csrf_token %}
+            <input class="form-control" autofocus type="text" name="username" placeholder="Username">
+            <input class="form-control" type="password" name="password" placeholder="Password">
+            <input class="btn btn-primary" type="submit" value="Login">
+        </form>
+
+        <p class="mt-4 text-sm">
+            Don't have an account? <a href="{% url 'register' %}">Register here</a>.
+        </p>
+    </div>
+
+</body>
+
+</html>

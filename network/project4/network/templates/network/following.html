@@ -1,0 +1,124 @@
+{% extends "network/layout.html" %}
+{% load custom_filters %}
+{% block body %}
+    {% if user.is_authenticated %}
+    <div class="flex justify-center py-6">
+        <!-- Profile Card -->
+        <div class="relative w-[800px] bg-white rounded-2xl shadow-md border border-gray-200">
+            <!-- Cover Image -->
+            <img src="{{ user.cover.url }}" alt="Cover Image" class="w-full h-[250px] object-cover rounded-t-xl">
+            
+            <!-- Profile Picture -->
+            <div class="absolute top-[200px] left-6">
+                <a href="{% url 'profile' user.username %}">
+                    <img src="{{ user.avatar.url }}" alt="Avatar" class="w-24 h-24 rounded-full border-4 border-white shadow-md">
+                </a>
+            </div>
+
+            <!-- Profile Information -->
+            <div class="ml-36 mt-2 mb-4">
+                <div class="font-semibold text-xl">
+                    <a href="{% url 'profile' user.username %}" class="text-gray-900 hover:text-blue-500">{{ user.name }}</a>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <a href="{% url 'profile' user.username %}" class="hover:text-blue-500">@{{ user.username }}</a>
+                </div>
+
+                <!-- Stats -->
+                <div class="flex space-x-12 mt-3 text-sm text-gray-600">
+                    <div>
+                        <p>Tweets</p>
+                        <p class="font-semibold text-lg">{{ post_count }}</p>
+                    </div>
+                    <div>
+                        <p>Following</p>
+                        <p class="font-semibold text-lg">{{ following_count }}</p>
+                    </div>
+                    <div>
+                        <p>Followers</p>
+                        <p class="font-semibold text-lg">{{ followers_count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Post Creation Form -->
+        <div class="w-[800px] bg-white mt-6 rounded-xl shadow-md border border-gray-200">
+            <form action="{% url 'create-post' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="flex items-center space-x-4 p-4">
+                    <div>
+                        <a href="{% url 'profile' user.username %}">
+                            <img src="{{ user.avatar.url }}" class="rounded-full w-12 h-12">
+                        </a>
+                    </div>
+                    <div class="w-full">
+                        <input type="text" name="create-post" id="create-post"
+                               class="w-full p-4 text-lg border rounded-xl outline-none focus:border-blue-500"
+                               placeholder="What's happening?">
+                        <div class="flex justify-between items-center mt-2">
+                            <div class="space-x-4">
+                                <span class="text-blue-500"><i class="bi bi-image"></i></span>
+                                <span class="text-blue-500"><i class="bi bi-emoji-smile"></i></span>
+                                <span class="text-blue-500"><i class="bi bi-filetype-gif"></i></span>
+                            </div>
+                            <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-full font-semibold">Tweet</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Posts Section -->
+    <div class="flex justify-center mt-6">
+        <div class="w-[800px]">
+            {% for post in posts %}
+            <div class="bg-white mb-6 rounded-xl shadow-md border border-gray-200 p-4">
+                <!-- Post Header -->
+                <div class="flex items-start space-x-3">
+                    <a href="{% url 'profile' post.user.username %}">
+                        <img src="{{ post.user.avatar.url }}" class="rounded-full w-12 h-12">
+                    </a>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <div class="font-semibold">{{ post.user.name }}</div>
+                            <div class="text-sm text-gray-500"><a href="{% url 'profile' post.user.username %}">@{{ post.user.username }}</a></div>
+                            <span class="text-gray-400">&#8226;</span>
+                            <div class="text-sm text-gray-500">{{ post.created_at|time_ago_in_units }}</div>
+                        </div>
+                        <div class="mt-2 text-lg">
+                            <p>{{ post.post }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Post Actions -->
+                <div class="flex justify-around items-center py-3 text-gray-500">
+                    <div class="flex items-center space-x-4">
+                        <button><i class="bi bi-chat"></i></button>
+                        <button><i class="bi bi-repeat"></i></button>
+                        <button class="like-btn" data-post-id="{{ post.id }}">
+                            <i class="bi {% if post|user_liked_post:request.user %}bi-heart-fill text-red-500{% else %}bi-heart{% endif %}"></i>
+                        </button>
+                        <span id="like-count-{{ post.id }}" class="ml-2">{{ post.likes.count }}</span>
+                    </div>
+                    <button id="dToggle" class="focus:outline-none">
+                        <i class="bi bi-three-dots-vertical text-gray-600"></i>
+                    </button>
+                </div>
+
+                <!-- Post Dropdown Menu -->
+                <div id="dMenu" class="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg hidden">
+                    <ul class="text-sm text-gray-700">
+                        <li><a href="#" class="block px-4 py-2 text-gray-500 hover:bg-gray-200 hover:text-blue-500">Edit</a></li>
+                        <li><a href="#" class="block px-4 py-2 text-gray-500 hover:bg-gray-200 hover:text-blue-500">Delete</a></li>
+                        <li><a href="#" class="block px-4 py-2 text-gray-500 hover:bg-gray-200 hover:text-blue-500">Report</a></li>
+                    </ul>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,377 @@
+{% extends "network/layout.html" %}
+{% load custom_filters %}
+{% block body %}
+
+<div class="flex justify-center">
+   
+         <!-- Navigation Links -->
+         <div class="bg-white rounded-xl p-4 shadow-md w-full max-w-lg">
+            <ul class="flex items-center space-x-6">
+                <li class="text-black py-2">
+                    <a class="inline text-2xl hover:text-blue-600 hover:no-underline duration-150" href="{% url 'index' %}">
+                        <i class="bi bi-shuffle text-2xl mr-2"></i> Random
+                    </a>
+                </li>
+                <li class="text-black py-2">
+                    <a class="inline text-2xl hover:text-blue-600 hover:no-underline duration-150" href="{% url 'following' %}">
+                        <i class="bi bi-person-lines-fill text-2xl mr-2"></i> Following
+                    </a>
+                </li>
+                <li class="text-black py-2">
+                    <a class="inline text-2xl hover:text-blue-600 hover:no-underline duration-150" href="{% url 'profile' user.username %}">
+                        <i class="bi bi-person-circle text-2xl mr-2"></i> Profile
+                    </a>
+                </li>
+                <li class="text-black py-2">
+                    <a class="inline text-2xl hover:text-blue-600 hover:no-underline duration-150" href="{% url 'login' %}">
+                        <i class="bi bi-box-arrow-right text-2xl mr-2"></i> Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+    <div class="ml-10 mr-44 bg-[#F7F7F8] my-2 rounded-xl shadow-md">
+        <form action="{% url 'create-post' %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="container mx-auto">
+                <div class="my-4">
+                    <div class="flex items-start space-x-4">
+                        <div class="my-[3px]">
+                            <a href="{% url 'profile' user.username %}">
+                                <img src="{{ user.avatar.url }}" class="rounded-full w-14 h-14 object-cover border-2 border-blue-500">
+                            </a>
+                        </div>
+                        <div class="w-full h-24">
+                            <div>
+                                <input type="text" name="create-post" id="create-post"
+                                    class="text-black p-2 bg-[#F7F7F8] mb-2 outline-none w-full rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500"
+                                    placeholder="What's happening?" required>
+                            </div>
+                            <input type="hidden" value="{{ user.name }}" name="name">
+                            <input type="hidden" value="{{ user.username }}" name="username">
+                            <input type="hidden" value="{{ user.avatar.url }}" name="avatar">
+                            <div>
+                                <div class="flex justify-end">
+                                    <input type="submit" value="Tweet"
+                                        class="bg-blue-500 hover:bg-blue-600 px-4 py-[5px] rounded-full text-md font-bold text-white focus:outline-none">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+
+    <div class="flex justify-center">
+        <div class="bg-[#F7F7F8] w-[600px]">
+            {% for post in posts %}
+            <div class="flex items-start space-x-2 bg-[#F7F7F8] p-4 rounded-lg shadow-md mb-4">
+                <div class="my-[3px]">
+                    <img src="{{ post.user.avatar.url }}" class="rounded-full w-12 h-12 object-cover">
+                </div>
+                <div class="my-[3px] w-full">
+                    <div class="flex justify-start items-center">
+                        <div class="font-bold text-black"> {{ post.user.name }} </div>
+                        <div class="text-gray-500 mx-[5px] tracking-tighter">
+                            <a href="{% url 'profile' post.user.username %}">@{{ post.user.username }}</a>
+                        </div>
+                        <span class="mx-[5px] text-gray-500">&#8226</span>
+                        <div class="text-sm text-gray-500">{{ post.created_at|time_ago_in_units }}</div>
+                    </div>
+                    <div class="py-[1px] text-lg text-black w-[500px]">
+                        <ul>
+                            <li>{{ post.post }}</li>
+                        </ul>
+                    </div>
+
+                    <div class="flex justify-around py-2 space-x-5">
+                        <div class="px-2">
+                            <button class="comment-btn text-gray-500" data-post-id="{{ post.id }}">
+                                <i class="bi bi-chat-right-text"></i>
+                            </button>
+                            <span id="comment-count-{{ post.id }}" class="text-gray-500">{{ post.comments.count }}</span>
+                        </div>
+                        <div class="px-2">
+                            <button class="repost-btn text-gray-500" data-post-id="{{ post.id }}">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                            <span id="repost-count-{{ post.id }}" class="text-gray-500">{{ post.reposts.count }}</span>
+                        </div>
+                        <div class="px-2">
+                            <button class="like-btn text-gray-500" data-post-id="{{ post.id }}">
+                                <i
+                                        class="bi {% if post|user_liked_post:request.user %}bi-heart-fill text-red-500{% else %}bi bi-suit-heart-fill{% endif %}"></i>
+                                </button>
+                            <span id="like-count-{{ post.id }}" class="text-gray-500">{{ post.likes.count }}</span>
+                        </div>
+                        <div class="relative">
+                            <button id="dToggle" class="focus:outline-none">
+                            </button>
+
+                            <!--dropdown-->
+                            <div id="dMenu"
+                                class="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg hidden">
+                                <ul class="text-sm text-gray-700">
+                                    <li>
+                                        <a href="#"
+                                            class="block px-4 py-[2px] text-gray-500 text-sm hover:bg-gray-200 hover:text-white hover:no-underline">Edit</a>
+                                    </li>
+                                    <li>
+                                        <a href="#"
+                                            class="block px-4 py-[2px] text-gray-500 text-sm hover:bg-gray-200 hover:text-white hover:no-underline">Delete</a>
+                                    </li>
+                                    <li>
+                                        <a href="#"
+                                            class="block px-4 py-[2px] text-gray-500 text-sm hover:bg-gray-200 hover:text-white hover:no-underline">Report</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Page control -->
+            <div class="pagination flex justify-around items-center my-4">
+                <div class="text-black">
+                    {% if page_obj.has_previous %}
+                    <a href="?page=1" class="text-black"><i class="bi bi-arrow-left"></i></a>
+                    {% endif %}
+                </div>
+                <div class="flex space-x-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="text-black"><i class="bi bi-arrow-left"></i></a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.paginator.num_pages }}" class="text-black"><i class="bi bi-arrow-right"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comment Modal -->
+<div id="comment-modal" class="fixed inset-0 hidden bg-black bg-opacity-40 z-50 overflow-auto" aria-hidden="true">
+    <div class="bg-white rounded-lg shadow-lg mx-auto mt-24 p-4 w-[500px]">
+        <button
+            class="close-comment-modal text-gray-500 text-xl font-bold float-right cursor-pointer hover:text-black focus:outline-none">
+            &times;
+        </button>
+        <h3 class="text-lg font-bold mb-2">Add a Comment</h3>
+        <form id="comment-form" class="space-y-3" onsubmit="submitComment(event)">
+            {% csrf_token %}
+            <textarea name="content" id="comment-content"
+                class="w-full h-16 resize-none border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-white"
+                placeholder="Write your comment here..." required></textarea>
+            <input type="hidden" id="comment-post-id">
+            <div class="text-right">
+                <button type="submit"
+                    class="bg-white px-4 py-2 rounded-lg text-white text-sm font-bold focus:outline-none hover:bg-cyan-600">Post
+                    Comment</button>
+            </div>
+            <div id="comments-list" class="max-h-60 overflow-y-auto mb-3">
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    //comment
+    document.addEventListener("DOMContentLoaded", () => {
+      const modal = document.getElementById("comment-modal");
+      const closeModalButton = document.querySelector(".close-comment-modal");
+      const commentForm = document.getElementById("comment-form");
+      const commentContent = document.getElementById("comment-content");
+      const commentPostIdInput = document.getElementById("comment-post-id");
+      const commentsList = document.getElementById("comments-list");
+
+      document.querySelectorAll(".comment-btn").forEach(button => {
+          button.addEventListener("click", () => {
+              const postId = button.dataset.postId;
+              commentPostIdInput.value = postId;
+              loadComments(postId);
+              modal.style.display = "block";
+          });
+      });
+
+      closeModalButton.addEventListener("click", () => {
+          modal.style.display = "none";
+          commentContent.value = "";
+      });
+
+      window.addEventListener("click", (event) => {
+          if (event.target === modal) {
+              modal.style.display = "none";
+              commentContent.value = "";
+          }
+      });
+
+      function loadComments(postId) {
+          fetch(`/post/${postId}/comments/`)
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      commentsList.innerHTML = "";
+                      data.comments.forEach(comment => {
+                          const commentDiv = document.createElement("div");
+                          commentDiv.classList.add("flex", "space-x-2", "my-2");
+                          commentDiv.innerHTML = `<strong>@${comment.username}</strong>: <span>${comment.content}</span>`;
+                          commentsList.appendChild(commentDiv);
+                      });
+                  } else {
+                      commentsList.innerHTML = "<p>No comments yet.</p>";
+                  }
+              })
+              .catch(error => console.error("Error fetching comments:", error));
+      }
+
+      commentForm.addEventListener("submit", (event) => {
+          event.preventDefault();
+          const postId = commentPostIdInput.value;
+          const content = commentContent.value;
+
+          fetch(`/post/${postId}/add_comment/`, {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": getCookie("csrftoken"),
+              },
+              body: JSON.stringify({ content: content })
+          })
+              .then((response) => response.json())
+              .then((data) => {
+                  if (data.success) {
+                      const newComment = document.createElement("div");
+                      newComment.classList.add("flex", "space-x-2", "my-2");
+                      newComment.innerHTML = `<strong>@${data.username}</strong>: <span>${data.comment}</span>`;
+                      commentsList.appendChild(newComment);
+                      commentContent.value = "";
+                  } else {
+                      alert("Failed to add comment");
+                  }
+              })
+              .catch((error) => {
+                  console.error("Error:", error);
+                  alert("An error occurred while adding the comment.");
+              });
+      });
+
+      function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== "") {
+              const cookies = document.cookie.split(";");
+              for (let i = 0; i < cookies.length; i++) {
+                  const cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === name + "=") {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+  });
+
+
+
+  //like
+  document.addEventListener("DOMContentLoaded", () => {
+      const likeButtons = document.querySelectorAll(".like-btn");
+
+      likeButtons.forEach(button => {
+          button.addEventListener("click", () => {
+              const postId = button.dataset.postId;
+              const likeCountElement = document.getElementById(`like-count-${postId}`);
+
+              fetch(`/post/${postId}/like/`, {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      "X-CSRFToken": getCookie('csrftoken')
+                  }
+              })
+                  .then(response => response.json())
+                  .then(data => {
+                      if (data.success) {
+                          button.querySelector("i").className = data.is_liked
+                              ? "bi bi-heart-fill text-red-500"
+                              : "bi bi-heart";
+                          likeCountElement.textContent = data.like_count;
+                      }
+                  })
+                  .catch(error => console.error('Error:', error));
+          });
+      });
+  });
+
+  function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+
+  //repost
+  document.addEventListener("DOMContentLoaded", () => {
+      const repostButtons = document.querySelectorAll(".repost-btn");
+
+      repostButtons.forEach(button => {
+          button.addEventListener("click", () => {
+              const postId = button.dataset.postId;
+              const repostCountElement = document.getElementById(`repost-count-${postId}`);
+
+              fetch(`/post/${postId}/repost/`, {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      "X-CSRFToken": getCookie('csrftoken')
+                  }
+              })
+                  .then(response => response.json())
+                  .then(data => {
+                      if (data.success) {
+                          if (data.action === 'added') {
+                              location.reload()
+                              button.classList.add('disabled');
+                              repostCountElement.textContent = parseInt(repostCountElement.textContent) + 1;
+                          } else if (data.action === 'removed') {
+                              location.reload()
+                              button.classList.remove('disabled');
+                              repostCountElement.textContent = parseInt(repostCountElement.textContent) - 1;
+                          }
+                      } else {
+                          console.error('Action failed:', data);
+                      }
+                  })
+                  .catch(error => console.error('Error:', error));
+          });
+      });
+  });
+
+  function getCookie(name) {
+      const cookies = document.cookie.split(';').map(cookie => cookie.trim());
+      for (const cookie of cookies) {
+          if (cookie.startsWith(name + '=')) {
+              return decodeURIComponent(cookie.split('=')[1]);
+          }
+      }
+      return null;
+  }
+
+</script>
+
+{% endblock %}
+

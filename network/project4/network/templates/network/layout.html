@@ -1,0 +1,164 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>{% block title %}Social Network{% endblock %}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="{% static 'network/styles.css' %}" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+
+
+
+    <nav class="flex justify-between items-center w-full py-[5px] my-4">
+        {% if user.is_authenticated %}
+    
+        
+        <div class="ml-60 mr-20">
+            <input type="text" id="search-input" placeholder="Search"
+                class="border-[1px] border-gray-300  text-sm text-white py-[5px] px-2 rounded-3xl outline-none w-72">
+            <div id="search-results" class="absolute w-44"></div>
+        </div>
+
+     
+        {% else %}
+        <div>
+            <a class="hover:no-underline" href="{% url 'login' %}">Log In</a>
+        </div>
+        <div>
+            <a class="hover:no-underline" href="{% url 'register' %}">Register</a>
+        </div>
+        {% endif %}
+    </nav>
+
+    
+
+    <div class="">
+        {% block body %}
+        {% endblock %}
+    </div>
+
+    <!-- The Modal -->
+    <div id="myModal" class="fixed inset-0 hidden  bg-opacity-40 z-50 overflow-auto" aria-hidden="true">
+        <!-- Modal Content -->
+         
+        <div class=" rounded-lg shadow-lg mx-auto mt-24 p-4 w-[600px]   ">
+            <!-- Close Button -->
+            <span class="close text-gray-500 text-xl ml-2 font-bold float-right cursor-pointer hover:text-black"
+                role="button" aria-label="Close Modal">&times;</span>
+            <!-- Form -->
+            <form action="{% url 'create-post' %}" method="post" class="space-y-3">
+                {% csrf_token %}
+                <div class="flex items-start space-x-3 py-20">
+                    <!-- Profile Avatar -->
+                    <img src="{{ user.avatar.url }}" class="rounded-full w-12 h-12 object-cover" alt="User Avatar">
+                    <!-- Text Area -->
+                    <div class="flex-grow">
+                        <label for="create-post" class="sr-only">Create Post</label>
+                        <textarea name="create-post" id="create-post"
+                            class="w-full h-20 resize-none   text-white focus:outline-none"
+                            placeholder="What's happening?" size="280" required></textarea>
+                    </div>
+                </div>
+                <!-- Post Actions -->
+                <div class="flex justify-between items-center">
+                    <div class="flex space-x-4 text-sky-500">
+                        <!-- <i class="bi bi-camera" aria-hidden="true"></i>
+                        <i class="bi bi-emoji-smile" aria-hidden="true"></i> -->
+                    </div>
+                    <input type="submit" value="Post"
+                        class="bg-black px-4 py-[5px] rounded-lg text-md font-bold text-white focus:none">
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
+
+   
+
+
+    <script>
+        // document.getElementById("dropdownTrigger").addEventListener("click", function (event) {
+        //     event.preventDefault();
+        //     const dropdownMenu = document.getElementById("dropdownMenu");
+        //     dropdownMenu.classList.toggle("hidden");
+        // });
+
+        window.addEventListener("click", function (event) {
+            const dropdownMenu = document.getElementById("dropdownMenu");
+            if (!event.target.closest("#dropdownTrigger") && !event.target.closest("#dropdownMenu")) {
+                dropdownMenu.classList.add("hidden");
+            }
+        });
+
+        var modal = document.getElementById("myModal");
+
+        var btn = document.getElementById("myBtn");
+
+        var span = document.getElementsByClassName("close")[0];
+
+        btn.onclick = function () {
+            modal.style.display = "block";
+        }
+
+        span.onclick = function () {
+            modal.style.display = "none";
+        }
+
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const searchInput = document.getElementById("search-input");
+
+            searchInput.addEventListener("input", () => {
+                const query = searchInput.value.trim();
+
+                if (query.length >= 2) {
+                    fetch(`/search/?q=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            displaySearchResults(data);
+                        })
+                        .catch(error => console.error("Error fetching search results:", error));
+                } else {
+                    document.getElementById("search-results").innerHTML = '';
+                }
+            });
+
+            function displaySearchResults(data) {
+                const resultsContainer = document.getElementById("search-results");
+                resultsContainer.innerHTML = "";
+
+                if (data.users.length > 0 || data.posts.length > 0) {
+                    if (data.users.length > 0) {
+                        const userHeading = document.createElement('h3');
+                        userHeading.textContent = '';
+                        resultsContainer.appendChild(userHeading);
+                        data.users.forEach(user => {
+                            const userItem = document.createElement("div");
+                            userItem.classList.add("search-result-item");
+                            userItem.innerHTML = `
+                        <p><a href="/profile/${user.username}/"><strong>@${user.username}</strong></a></p>
+                    `;
+                            resultsContainer.appendChild(userItem);
+                        });
+                    }
+                } else {
+                    resultsContainer.innerHTML = "<p>No results found</p>";
+                }
+            }
+        });
+
+    </script>
+</body>
+
+</html>
